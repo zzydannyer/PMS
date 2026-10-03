@@ -2,10 +2,19 @@
   "files": [],
   "references": [
     {
-      "path": "./tsconfig.app.json"
+      "path": "./packages/domain"
     },
     {
-      "path": "./tsconfig.node.json"
+      "path": "./packages/api-client"
+    },
+    {
+      "path": "./packages/ai-core"
+    },
+    {
+      "path": "./apps/desktop/tsconfig.app.json"
+    },
+    {
+      "path": "./apps/desktop/tsconfig.node.json"
     }
   ]
 }
