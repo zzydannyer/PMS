@@ -25,6 +25,10 @@ export type WorkStatus =
 
 export type WorkType = "需求" | "任务" | "缺陷" | "技术任务";
 
+export type MemberRole = "管理" | "产品" | "开发" | "访客";
+
+export type MoveStatus = "IN_PROGRESS" | "IN_REVIEW" | "DONE" | "BLOCKED";
+
 export type ThemeMode = "dark" | "light";
 
 export type NavItem = {
@@ -46,13 +50,43 @@ export type DashboardProject = {
 export type DashboardWorkItem = {
   id: string;
   title: string;
+  description: string;
   type: WorkType;
   projectId: string;
+  iterationId: string;
   owner: string;
+  ownerId: string;
   due: string;
   status: WorkStatus;
   priority: "高" | "中" | "低";
   progress: number;
+};
+
+export type WorkspaceMember = {
+  id: string;
+  name: string;
+  login: string;
+  password: string;
+  role: MemberRole;
+};
+
+export type TaskDraft = {
+  title: string;
+  description: string;
+  type: WorkType;
+  iterationId: string;
+  ownerId: string;
+  due: string;
+  status: WorkStatus;
+  priority: "高" | "中" | "低";
+};
+
+export type ProjectDraft = {
+  name: string;
+  description: string;
+  status: "进行中" | "规划中" | "已完成";
+  due: string;
+  owner: string;
 };
 
 export type DashboardNotice = {
@@ -61,6 +95,15 @@ export type DashboardNotice = {
   description: string;
   time: string;
   tone: "info" | "warning" | "success";
+  read: boolean;
+};
+
+export type DashboardComment = {
+  id: string;
+  workItemId: string;
+  authorId: string;
+  content: string;
+  createdAt: string;
 };
 
 export type FocusItem = {
@@ -70,12 +113,5 @@ export type FocusItem = {
   due: string;
   priority: "高" | "中" | "低";
   done: boolean;
-};
-
-export type MetricCard = {
-  label: string;
-  value: string;
-  note: string;
-  icon: LucideIcon;
-  iconClassName: string;
+  workItemId: string;
 };

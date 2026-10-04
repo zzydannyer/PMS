@@ -1,9 +1,11 @@
-import type { FormEventHandler } from "react";
-import { ChevronRight, Plus, Search, Sparkles, X } from "lucide-react";
+import { useState, type FormEventHandler } from "react";
+import { ChevronRight, Search } from "lucide-react";
+import type { Iteration } from "@pms/domain";
 
-import { Button } from "@/components/ui/button";
+import { Button, Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, Input, Label, Select, Textarea } from "@pms/ui";
 
-import type { DashboardWorkItem } from "./dashboard-types";
+import type { DashboardWorkItem, ProjectDraft, TaskDraft, WorkStatus, WorkType, WorkspaceMember } from "./dashboard-types";
+import { statusLabel } from "./dashboard-data";
 
 type SearchDialogProps = {
   open: boolean;
@@ -14,142 +16,176 @@ type SearchDialogProps = {
   onSelect: (item: DashboardWorkItem) => void;
 };
 
-export function SearchDialog({
-  open,
-  query,
-  results,
-  onQueryChange,
-  onClose,
-  onSelect,
-}: SearchDialogProps) {
-  if (!open) {
-    return <></>;
-  }
-
+export function SearchDialog({ open, query, results, onQueryChange, onClose, onSelect }: SearchDialogProps) {
   return (
-    <div className="fixed inset-0 z-30 flex items-start justify-center bg-slate-950/75 px-4 pt-[14vh] backdrop-blur-sm">
-      <div className="theme-modal w-full max-w-xl rounded-2xl border border-slate-700 bg-[#0b192b] p-4 shadow-2xl">
-        <div className="flex items-center gap-3 border-b border-slate-800 pb-3">
-          <Search className="size-5 text-slate-500" />
-          <input
-            autoFocus
-            value={query}
-            onChange={(event) => onQueryChange(event.currentTarget.value)}
-            placeholder="搜索工作流、负责人或项目……"
-            className="min-w-0 flex-1 bg-transparent text-sm text-white outline-none placeholder:text-slate-600"
-          />
-          <button
-            type="button"
-            aria-label="关闭搜索"
-            onClick={onClose}
-            className="rounded-md p-1 text-slate-500 hover:bg-slate-800 hover:text-white"
-          >
-            <X className="size-4" />
-          </button>
+    <Dialog open={open} onOpenChange={(next) => { if (!next) onClose(); }}>
+      <DialogContent className="top-24 max-w-xl translate-y-0">
+        <DialogHeader>
+          <DialogTitle>搜索</DialogTitle>
+          <DialogDescription>在本地数据中查找任务。</DialogDescription>
+        </DialogHeader>
+        <div className="flex items-center gap-2">
+          <Search className="size-4 text-muted-foreground" />
+          <Input autoFocus value={query} onChange={(event) => onQueryChange(event.currentTarget.value)} placeholder="任务、类型或负责人" />
         </div>
-        <div className="mt-3 space-y-1">
-          {query.trim() !== "" && results.length === 0 && (
-            <p className="p-4 text-center text-sm text-slate-500">
-              没有找到匹配的工作流。
-            </p>
-          )}
+        <div className="flex flex-col gap-1">
+          {query.trim() !== "" && results.length === 0 && <p className="py-6 text-center text-sm text-muted-foreground">没有找到匹配的任务。</p>}
           {results.map((item) => (
-            <button
-              key={item.id}
-              type="button"
-              onClick={() => onSelect(item)}
-              className="theme-search-result flex w-full items-center justify-between rounded-lg p-3 text-left hover:bg-slate-800"
-            >
+            <button key={item.id} type="button" onClick={() => onSelect(item)} className="flex w-full items-center justify-between rounded-md px-3 py-2 text-left hover:bg-muted">
               <span>
-                <span className="block text-sm text-slate-200">
-                  {item.title}
-                </span>
-                <span className="mt-1 block text-xs text-slate-500">
-                  {item.stream} · {item.owner}
-                </span>
+                <span className="block text-sm">{item.title}</span>
+                <span className="mt-1 block text-xs text-muted-foreground">{item.type} · {item.owner}</span>
               </span>
-              <ChevronRight className="size-4 text-slate-600" />
+              <ChevronRight className="size-4 text-muted-foreground" />
             </button>
           ))}
-          {query.trim() === "" && (
-            <p className="p-4 text-center text-xs text-slate-600">
-              搜索范围仅限当前本地演示数据。
-            </p>
-          )}
+          {query.trim() === "" && <p className="py-6 text-center text-sm text-muted-foreground">输入关键字开始搜索。</p>}
         </div>
-      </div>
-    </div>
+      </DialogContent>
+    </Dialog>
   );
 }
 
-type CreateWorkDialogProps = {
+const workTypes: WorkType[] = ["需求", "任务", "缺陷", "技术任务"];
+const workStatuses: WorkStatus[] = ["BACKLOG", "IN_PROGRESS", "IN_REVIEW", "BLOCKED", "DONE"];
+const priorities = ["高", "中", "低"] as const;
+
+type TaskDialogProps = {
   open: boolean;
-  title: string;
-  loading: boolean;
-  onTitleChange: (title: string) => void;
+  editing: boolean;
+  draft: TaskDraft;
+  members: WorkspaceMember[];
+  iterations: Iteration[];
+  onDraftChange: (draft: TaskDraft) => void;
+  onClose: () => void;
+  onSubmit: FormEventHandler<HTMLFormElement>;
+  onDelete: () => void;
+};
+
+export function TaskDialog({ open, editing, draft, members, iterations, onDraftChange, onClose, onSubmit, onDelete }: TaskDialogProps) {
+  const [deleteArmed, setDeleteArmed] = useState(false);
+  return (
+    <Dialog open={open} onOpenChange={(next) => { if (!next) { setDeleteArmed(false); onClose(); } }}>
+      <DialogContent>
+        <form onSubmit={onSubmit} className="flex flex-col gap-4">
+          <DialogHeader>
+            <DialogTitle>{editing ? "编辑任务" : "新建任务"}</DialogTitle>
+            <DialogDescription>{editing ? "修改任务信息，或删除这条任务。" : "加入当前项目。"}</DialogDescription>
+          </DialogHeader>
+          <Label className="flex flex-col items-stretch gap-2" htmlFor="workstream-title">
+            任务名称
+            <Input id="workstream-title" autoFocus value={draft.title} onChange={(event) => onDraftChange({ ...draft, title: event.target.value })} placeholder="任务名称" />
+          </Label>
+          <Label className="flex flex-col items-stretch gap-2" htmlFor="workstream-description">
+            说明
+            <Textarea id="workstream-description" value={draft.description} onChange={(event) => onDraftChange({ ...draft, description: event.target.value })} placeholder="补充说明" />
+          </Label>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <Label className="flex flex-col items-stretch gap-2">
+              类型
+              <Select value={draft.type} onChange={(event) => onDraftChange({ ...draft, type: event.target.value as WorkType })}>
+                {workTypes.map((item) => <option key={item} value={item}>{item}</option>)}
+              </Select>
+            </Label>
+            <Label className="flex flex-col items-stretch gap-2">
+              优先级
+              <Select value={draft.priority} onChange={(event) => onDraftChange({ ...draft, priority: event.target.value as TaskDraft["priority"] })}>
+                {priorities.map((item) => <option key={item} value={item}>{item}</option>)}
+              </Select>
+            </Label>
+            <Label className="flex flex-col items-stretch gap-2">
+              负责人
+              <Select value={draft.ownerId} onChange={(event) => onDraftChange({ ...draft, ownerId: event.target.value })}>
+                <option value="">未分配</option>
+                {members.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}
+              </Select>
+            </Label>
+            <Label className="flex flex-col items-stretch gap-2">
+              截止日期
+              <Input value={draft.due} onChange={(event) => onDraftChange({ ...draft, due: event.target.value })} placeholder="2026-10-30" />
+            </Label>
+            <Label className="flex flex-col items-stretch gap-2">
+              迭代
+              <Select value={draft.iterationId} onChange={(event) => onDraftChange({ ...draft, iterationId: event.target.value })}>
+                <option value="">未加入迭代</option>
+                {iterations.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}
+              </Select>
+            </Label>
+            {editing && (
+              <Label className="flex flex-col items-stretch gap-2">
+                状态
+                <Select value={draft.status} onChange={(event) => onDraftChange({ ...draft, status: event.target.value as WorkStatus })}>
+                  {workStatuses.map((item) => <option key={item} value={item}>{statusLabel[item]}</option>)}
+                </Select>
+              </Label>
+            )}
+          </div>
+          <DialogFooter>
+            {editing && <Button type="button" variant="destructive" onClick={() => { if (!deleteArmed) { setDeleteArmed(true); return; } onDelete(); }}>{deleteArmed ? "再点一次确认删除" : "删除"}</Button>}
+            <Button type="button" variant="outline" onClick={onClose}>取消</Button>
+            <Button type="submit">{editing ? "保存" : "创建任务"}</Button>
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+type ProjectDialogProps = {
+  open: boolean;
+  editing: boolean;
+  draft: ProjectDraft;
+  members: WorkspaceMember[];
+  onDraftChange: (draft: ProjectDraft) => void;
   onClose: () => void;
   onSubmit: FormEventHandler<HTMLFormElement>;
 };
 
-export function CreateWorkDialog({
-  open,
-  title,
-  loading,
-  onTitleChange,
-  onClose,
-  onSubmit,
-}: CreateWorkDialogProps) {
-  if (!open) {
-    return <></>;
-  }
-
+export function ProjectDialog({ open, editing, draft, members, onDraftChange, onClose, onSubmit }: ProjectDialogProps) {
   return (
-    <div className="fixed inset-0 z-30 flex items-center justify-center bg-slate-950/75 px-4 backdrop-blur-sm">
-      <form
-        onSubmit={onSubmit}
-        className="theme-modal w-full max-w-md rounded-2xl border border-slate-700 bg-[#0b192b] p-6 shadow-2xl"
-      >
-        <div className="flex items-start justify-between">
-          <div>
-            <p className="text-lg font-semibold text-white">新建任务</p>
-            <p className="mt-1 text-sm text-slate-500">
-              把下一项工作加入当前项目。
-            </p>
+    <Dialog open={open} onOpenChange={(next) => { if (!next) onClose(); }}>
+      <DialogContent>
+        <form onSubmit={onSubmit} className="flex flex-col gap-4">
+          <DialogHeader>
+            <DialogTitle>{editing ? "编辑项目" : "新建项目"}</DialogTitle>
+            <DialogDescription>{editing ? "更新当前项目信息。" : "创建一个本地项目。"}</DialogDescription>
+          </DialogHeader>
+          <Label className="flex flex-col items-stretch gap-2">
+            项目名称
+            <Input autoFocus value={draft.name} onChange={(event) => onDraftChange({ ...draft, name: event.target.value })} placeholder="项目名称" />
+          </Label>
+          <Label className="flex flex-col items-stretch gap-2">
+            说明
+            <Textarea value={draft.description} onChange={(event) => onDraftChange({ ...draft, description: event.target.value })} placeholder="项目说明" />
+          </Label>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <Label className="flex flex-col items-stretch gap-2">
+              状态
+              <Select value={draft.status} onChange={(event) => onDraftChange({ ...draft, status: event.target.value as ProjectDraft["status"] })}>
+                <option value="规划中">规划中</option>
+                <option value="进行中">进行中</option>
+                <option value="已完成">已完成</option>
+              </Select>
+            </Label>
+            <Label className="flex flex-col items-stretch gap-2">
+              负责人
+              <Select value={draft.owner} onChange={(event) => onDraftChange({ ...draft, owner: event.target.value })}>
+                {draft.owner !== "" && !members.some((item) => item.name === draft.owner) && <option value={draft.owner}>{draft.owner}</option>}
+                {members.map((item) => <option key={item.id} value={item.name}>{item.name}</option>)}
+              </Select>
+            </Label>
+            <Label className="flex flex-col items-stretch gap-2 sm:col-span-2">
+              目标日期
+              <Input value={draft.due} onChange={(event) => onDraftChange({ ...draft, due: event.target.value })} placeholder="2026-10-30" />
+            </Label>
           </div>
-          <button
-            type="button"
-            aria-label="关闭新建任务"
-            onClick={onClose}
-            className="rounded-md p-1 text-slate-500 hover:bg-slate-800 hover:text-white"
-          >
-            <X className="size-4" />
-          </button>
-        </div>
-        <label
-          className="mt-6 block text-xs font-medium text-slate-400"
-          htmlFor="workstream-title"
-        >
-          任务名称
-        </label>
-        <input
-          id="workstream-title"
-          autoFocus
-          value={title}
-          onChange={(event) => onTitleChange(event.currentTarget.value)}
-          placeholder="例如：完成登录页验收"
-          className="theme-field mt-2 h-11 w-full rounded-lg border border-slate-700 bg-slate-950 px-3 text-sm text-white outline-none placeholder:text-slate-600 focus:border-cyan-400"
-        />
-        <div className="mt-6 flex justify-end gap-2">
-          <Button type="button" variant="ghost" onClick={onClose}>
-            取消
-          </Button>
-          <Button type="submit" variant="primary" disabled={loading}>
-            <Plus className="size-4" />
-            {loading ? "创建中…" : "创建任务"}
-          </Button>
-        </div>
-      </form>
-    </div>
+          <DialogFooter>
+            <Button type="button" variant="outline" onClick={onClose}>取消</Button>
+            <Button type="submit">{editing ? "保存" : "创建项目"}</Button>
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
   );
 }
 
@@ -169,124 +205,40 @@ type AiDialogProps = {
   onConfirmProposal: () => void;
 };
 
-export function AiDialog({
-  open,
-  message,
-  answer,
-  proposalId,
-  proposalTitle,
-  proposalStatus,
-  usage,
-  loading,
-  onMessageChange,
-  onClose,
-  onSubmit,
-  onCreateProposal,
-  onConfirmProposal,
-}: AiDialogProps) {
-  if (!open) {
-    return <></>;
-  }
-
+export function AiDialog({ open, message, answer, proposalId, proposalTitle, proposalStatus, usage, loading, onMessageChange, onClose, onSubmit, onCreateProposal, onConfirmProposal }: AiDialogProps) {
   return (
-    <div className="fixed inset-0 z-30 flex items-center justify-center bg-slate-950/75 px-4 backdrop-blur-sm">
-      <form
-        onSubmit={onSubmit}
-        className="theme-modal w-full max-w-xl rounded-2xl border border-slate-700 bg-[#0b192b] p-6 shadow-2xl"
-      >
-        <div className="flex items-start justify-between">
-          <div>
-            <p className="flex items-center gap-2 text-lg font-semibold text-white">
-              <Sparkles className="size-5 text-violet-300" />
-              PMS AI 助手
-            </p>
-            <p className="mt-1 text-sm text-slate-500">
-              AI 只提供建议，涉及写入的操作必须由你确认。
-            </p>
-          </div>
-          <button
-            type="button"
-            aria-label="关闭 AI 助手"
-            onClick={onClose}
-            className="rounded-md p-1 text-slate-500 hover:bg-slate-800 hover:text-white"
-          >
-            <X className="size-4" />
-          </button>
-        </div>
-        <label
-          className="mt-6 block text-xs font-medium text-slate-400"
-          htmlFor="ai-message"
-        >
-          你的问题
-        </label>
-        <textarea
-          id="ai-message"
-          autoFocus
-          value={message}
-          onChange={(event) => onMessageChange(event.currentTarget.value)}
-          placeholder="例如：总结一下当前项目的风险"
-          className="theme-field mt-2 min-h-24 w-full resize-none rounded-lg border border-slate-700 bg-slate-950 p-3 text-sm text-white outline-none placeholder:text-slate-600 focus:border-violet-400"
-        />
-        {answer !== "" && (
-          <div className="mt-4 rounded-lg border border-violet-400/20 bg-violet-400/5 p-4 text-sm leading-6 text-slate-300">
-            {answer}
-          </div>
-        )}
-        {usage !== "" && (
-          <p className="mt-3 text-xs text-slate-500">{usage}</p>
-        )}
-        {proposalId !== "" && (
-          <div className="mt-4 rounded-lg border border-cyan-400/20 bg-cyan-400/5 p-4">
-            <p className="text-xs font-semibold text-cyan-200">
-              待确认的变更提议
-            </p>
-            <p className="mt-2 text-sm text-slate-200">
-              创建工作项：{proposalTitle}
-            </p>
-            <p className="mt-1 text-xs text-slate-500">
-              当前状态：{proposalStatus}
-            </p>
-            <div className="mt-3 flex gap-2">
-              <Button
-                type="button"
-                variant="secondary"
-                onClick={onConfirmProposal}
-                disabled={loading || proposalStatus !== "WAITING_APPROVAL"}
-              >
-                确认执行
-              </Button>
-              <Button
-                type="button"
-                variant="ghost"
-                onClick={onCreateProposal}
-                disabled={loading}
-              >
-                重新生成
-              </Button>
+    <Dialog open={open} onOpenChange={(next) => { if (!next) onClose(); }}>
+      <DialogContent className="max-w-xl">
+        <form onSubmit={onSubmit} className="flex flex-col gap-4">
+          <DialogHeader>
+            <DialogTitle>助手</DialogTitle>
+            <DialogDescription>写入操作需要确认后才会执行。</DialogDescription>
+          </DialogHeader>
+          <Label className="flex flex-col items-stretch gap-2" htmlFor="ai-message">
+            问题
+            <Textarea id="ai-message" autoFocus value={message} onChange={(event) => onMessageChange(event.currentTarget.value)} placeholder="例如：总结当前项目的风险" />
+          </Label>
+          {answer !== "" && <div className="rounded-md border bg-muted px-3 py-2 text-sm">{answer}</div>}
+          {usage !== "" && <p className="text-xs text-muted-foreground">{usage}</p>}
+          {proposalId !== "" && (
+            <div className="rounded-md border p-3">
+              <p className="text-sm font-medium">待确认的变更</p>
+              <p className="mt-2 text-sm">创建工作项：{proposalTitle}</p>
+              <p className="mt-1 text-xs text-muted-foreground">当前状态：{proposalStatus}</p>
+              <div className="mt-3 flex gap-2">
+                <Button type="button" variant="outline" onClick={onConfirmProposal} disabled={loading || proposalStatus !== "WAITING_APPROVAL"}>确认执行</Button>
+                <Button type="button" variant="ghost" onClick={onCreateProposal} disabled={loading}>重新生成</Button>
+              </div>
             </div>
-          </div>
-        )}
-        <div className="mt-6 flex justify-end gap-2">
-          <Button type="button" variant="ghost" onClick={onClose}>
-            关闭
-          </Button>
-          <Button type="submit" variant="primary" disabled={loading}>
-            <Sparkles className="size-4" />
-            {loading ? "分析中…" : "开始分析"}
-          </Button>
-          {proposalId === "" && (
-            <Button
-              type="button"
-              variant="secondary"
-              onClick={onCreateProposal}
-              disabled={loading || message.trim() === ""}
-            >
-              生成工作项提议
-            </Button>
           )}
-        </div>
-      </form>
-    </div>
+          <DialogFooter>
+            <Button type="button" variant="outline" onClick={onClose}>关闭</Button>
+            <Button type="submit" disabled={loading}>{loading ? "分析中…" : "开始分析"}</Button>
+            {proposalId === "" && <Button type="button" variant="outline" onClick={onCreateProposal} disabled={loading || message.trim() === ""}>生成工作项提议</Button>}
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
   );
 }
 
@@ -299,63 +251,25 @@ type LoginScreenProps = {
   onSubmit: FormEventHandler<HTMLFormElement>;
 };
 
-export function LoginScreen({
-  login,
-  password,
-  notice,
-  onLoginChange,
-  onPasswordChange,
-  onSubmit,
-}: LoginScreenProps) {
+export function LoginScreen({ login, password, notice, onLoginChange, onPasswordChange, onSubmit }: LoginScreenProps) {
   return (
-    <div className="flex h-svh min-h-175 min-w-280 items-center justify-center bg-[#07111f] text-slate-100">
-      <form
-        onSubmit={onSubmit}
-        className="w-full max-w-sm rounded-2xl border border-slate-700 bg-[#0b192b] p-7 shadow-2xl"
-      >
-        <div className="flex items-center gap-3">
-          <div className="flex size-10 items-center justify-center rounded-xl bg-cyan-400 font-black text-slate-950">
-            P
-          </div>
-          <div>
-            <p className="font-bold">PMS 项目管理中心</p>
-            <p className="text-xs text-slate-500">登录你的工作区</p>
-          </div>
+    <div className="flex h-svh items-center justify-center bg-background">
+      <form onSubmit={onSubmit} className="flex w-full max-w-sm flex-col gap-4 rounded-lg border bg-card p-6 shadow-xs">
+        <div>
+          <h1 className="text-base font-semibold">登录</h1>
+          <p className="mt-1 text-sm text-muted-foreground">PMS</p>
         </div>
-        <label
-          className="mt-8 block text-xs font-medium text-slate-400"
-          htmlFor="login-name"
-        >
+        <Label className="flex flex-col items-stretch gap-2" htmlFor="login-name">
           账号
-        </label>
-        <input
-          id="login-name"
-          value={login}
-          onChange={(event) => onLoginChange(event.currentTarget.value)}
-          className="theme-field mt-2 h-11 w-full rounded-lg border border-slate-700 bg-slate-950 px-3 text-sm text-white outline-none focus:border-cyan-400"
-        />
-        <label
-          className="mt-4 block text-xs font-medium text-slate-400"
-          htmlFor="login-password"
-        >
+          <Input id="login-name" value={login} onChange={(event) => onLoginChange(event.currentTarget.value)} />
+        </Label>
+        <Label className="flex flex-col items-stretch gap-2" htmlFor="login-password">
           密码
-        </label>
-        <input
-          id="login-password"
-          type="password"
-          value={password}
-          onChange={(event) => onPasswordChange(event.currentTarget.value)}
-          className="theme-field mt-2 h-11 w-full rounded-lg border border-slate-700 bg-slate-950 px-3 text-sm text-white outline-none focus:border-cyan-400"
-        />
-        {notice !== "" && (
-          <p className="mt-3 text-xs text-rose-300">{notice}</p>
-        )}
-        <Button type="submit" variant="primary" className="mt-6 w-full">
-          登录
-        </Button>
-        <p className="mt-4 text-center text-xs text-slate-600">
-          演示账号：demo / demo
-        </p>
+          <Input id="login-password" type="password" value={password} onChange={(event) => onPasswordChange(event.currentTarget.value)} />
+        </Label>
+        {notice !== "" && <p className="text-sm text-destructive">{notice}</p>}
+        <Button type="submit">登录</Button>
+        <p className="text-center text-xs text-muted-foreground">demo / demo 管理，product / product 产品，dev / dev 开发，guest / guest 访客</p>
       </form>
     </div>
   );
