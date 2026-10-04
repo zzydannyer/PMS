@@ -1,72 +1,101 @@
-import {
-  Bell,
-  ClipboardCheck,
-  FolderKanban,
-  Gauge,
-  LayoutGrid,
-  Target,
-  Users,
-} from "lucide-react";
+import { Gauge, Inbox, LayoutGrid, ListChecks, Settings2, ShieldCheck, Users } from "lucide-react";
 
 import type {
+  DashboardNotice,
+  DashboardProject,
   DashboardWorkItem,
-  FilterKey,
   FocusItem,
   MetricCard,
   NavItem,
   NavKey,
-  WorkStatus,
 } from "./dashboard-types";
 
 export const navigation: Record<NavKey, NavItem> = {
-  overview: { label: "工作台", icon: LayoutGrid },
-  work: { label: "我的工作", icon: ClipboardCheck },
-  roadmap: { label: "路线图", icon: Target },
-  team: { label: "团队负载", icon: Users },
+  home: { label: "工作台", icon: LayoutGrid },
+  "my-work": { label: "我的工作", icon: ListChecks },
+  projects: { label: "项目", icon: Users },
+  inbox: { label: "通知", icon: Inbox },
+  settings: { label: "管理设置", icon: Settings2 },
 };
 
-export const navKeys: NavKey[] = [
-  "overview",
-  "work",
-  "roadmap",
-  "team",
+export const navKeys: NavKey[] = ["home", "my-work", "projects", "inbox", "settings"];
+
+export const initialProjects: DashboardProject[] = [
+  {
+    id: "project-pms",
+    name: "PMS 项目管理系统",
+    description: "面向小团队的项目协作与交付平台",
+    status: "进行中",
+    progress: 68,
+    due: "2026年10月30日",
+    owner: "产品",
+    colorClassName: "bg-cyan-400",
+  },
+  {
+    id: "project-launch",
+    name: "秋季版本发布",
+    description: "完成核心功能、验收和发布准备",
+    status: "进行中",
+    progress: 42,
+    due: "2026年10月18日",
+    owner: "产品",
+    colorClassName: "bg-violet-400",
+  },
+  {
+    id: "project-research",
+    name: "客户需求探索",
+    description: "整理客户反馈并确定下一阶段方向",
+    status: "规划中",
+    progress: 18,
+    due: "2026年11月12日",
+    owner: "产品",
+    colorClassName: "bg-amber-400",
+  },
 ];
 
 export const initialWorkItems: DashboardWorkItem[] = [
   {
     id: "launch",
-    title: "春季版本发布准备",
-    stream: "平台",
-    owner: "AM",
+    title: "确定秋季版本发布范围",
+    type: "需求",
+    projectId: "project-launch",
+    owner: "产品",
     due: "今天",
-    status: "On track",
+    status: "IN_REVIEW",
+    priority: "高",
     progress: 82,
   },
   {
     id: "billing",
-    title: "账单体验升级",
-    stream: "增长",
-    owner: "MC",
+    title: "完成工作项详情页",
+    type: "任务",
+    projectId: "project-pms",
+    owner: "开发",
     due: "10月08日",
-    status: "At risk",
+    status: "IN_PROGRESS",
+    priority: "高",
     progress: 46,
   },
   {
     id: "research",
-    title: "客户调研结论整理",
-    stream: "探索",
-    owner: "SR",
+    title: "整理客户调研结论",
+    type: "需求",
+    projectId: "project-research",
+    owner: "产品",
     due: "10月14日",
-    status: "On track",
+    status: "IN_PROGRESS",
+    priority: "中",
     progress: 68,
   },
   {
     id: "migration",
-    title: "数据迁移演练",
-    stream: "平台",
-    owner: "JL",
+    title: "接入 PostgreSQL 数据持久化",
+    type: "技术任务",
+    projectId: "project-pms",
+    owner: "开发",
     due: "10月21日",
-    status: "Blocked",
+    status: "BLOCKED",
+    priority: "中",
     progress: 24,
   },
 ];
@@ -74,90 +103,80 @@ export const initialWorkItems: DashboardWorkItem[] = [
 export const initialFocusItems: FocusItem[] = [
   {
     id: "scope",
-    title: "确认版本发布范围",
-    context: "春季版本 · 产品",
+    title: "确认秋季版本发布范围",
+    context: "秋季版本发布 · 产品",
     due: "今天到期",
-    priority: "High",
+    priority: "高",
     done: false,
   },
   {
     id: "review",
-    title: "与财务评审账单原型",
-    context: "账单升级 · 增长",
+    title: "完成工作项详情页评审",
+    context: "PMS 项目管理系统 · 开发",
     due: "明天到期",
-    priority: "Medium",
+    priority: "中",
+    done: false,
+  },
+  {
+    id: "migration",
+    title: "解除数据库迁移阻塞",
+    context: "PMS 项目管理系统 · 开发",
+    due: "10月07日到期",
+    priority: "高",
     done: false,
   },
   {
     id: "brief",
     title: "发布客户调研结论",
-    context: "客户调研 · 探索",
+    context: "客户需求探索 · 产品",
     due: "10月06日到期",
-    priority: "Low",
+    priority: "低",
     done: true,
   },
 ];
 
-export const statusTone: Record<
-  WorkStatus,
-  "cyan" | "amber" | "rose" | "green"
-> = {
-  "On track": "cyan",
-  "At risk": "amber",
-  Blocked: "rose",
-  Complete: "green",
+export const statusLabel = {
+  BACKLOG: "待处理",
+  IN_PROGRESS: "进行中",
+  IN_REVIEW: "待验收",
+  DONE: "已完成",
+  BLOCKED: "已阻塞",
 };
 
-export const priorityTone: Record<
-  FocusItem["priority"],
-  "rose" | "amber" | "slate"
-> = {
-  High: "rose",
-  Medium: "amber",
-  Low: "slate",
+export const statusTone = {
+  BACKLOG: "slate",
+  IN_PROGRESS: "cyan",
+  IN_REVIEW: "violet",
+  DONE: "green",
+  BLOCKED: "rose",
 };
 
-export const statusLabel: Record<WorkStatus, string> = {
-  "On track": "正常",
-  "At risk": "有风险",
-  Blocked: "已阻塞",
-  Complete: "已完成",
-};
-
-export const priorityLabel: Record<FocusItem["priority"], string> = {
-  High: "高",
-  Medium: "中",
-  Low: "低",
-};
-
-export const filterLabel: Record<FilterKey, string> = {
-  All: "全部",
-  "On track": "正常",
-  "At risk": "有风险",
-  Blocked: "已阻塞",
-  Complete: "已完成",
+export const priorityTone = {
+  高: "rose",
+  中: "amber",
+  低: "slate",
 };
 
 export const metricCards: MetricCard[] = [
   {
-    label: "交付健康度",
-    value: "86%",
-    note: "较上个迭代 ↑ 8%",
-    icon: Gauge,
+    label: "我的待办",
+    value: "08",
+    note: "3 项今天到期",
+    icon: ListChecks,
     iconClassName: "bg-cyan-400/10 text-cyan-300",
   },
   {
-    label: "进行中的工作流",
-    value: "08",
-    note: "本周新增 2 个",
-    icon: FolderKanban,
+    label: "进行中项目",
+    value: "02",
+    note: "1 个项目有风险",
+    icon: Gauge,
     iconClassName: "bg-violet-400/10 text-violet-300",
   },
   {
-    label: "风险事项",
+    label: "待验收",
     value: "03",
-    note: "1 个需要决策",
-    icon: Bell,
+    note: "需要产品确认",
+    icon: ShieldCheck,
     iconClassName: "bg-amber-400/10 text-amber-300",
   },
   {
@@ -169,15 +188,36 @@ export const metricCards: MetricCard[] = [
   },
 ];
 
-export const projectShortcuts = [
-  { label: "平台", colorClassName: "bg-cyan-400" },
-  { label: "增长", colorClassName: "bg-violet-400" },
-  { label: "探索", colorClassName: "bg-amber-400" },
+export const initialNotices: DashboardNotice[] = [
+  {
+    id: "notice-1",
+    title: "有 3 项工作需要你处理",
+    description: "包括 1 项待验收、1 项即将到期和 1 项被阻塞任务。",
+    time: "刚刚",
+    tone: "warning",
+  },
+  {
+    id: "notice-2",
+    title: "开发更新了工作项",
+    description: "“完成工作项详情页”已进入待验收。",
+    time: "今天 14:20",
+    tone: "info",
+  },
+  {
+    id: "notice-3",
+    title: "秋季版本完成了一个里程碑",
+    description: "版本范围已完成产品评审。",
+    time: "昨天 18:05",
+    tone: "success",
+  },
 ];
 
-export const workFilters: FilterKey[] = [
-  "All",
-  "On track",
-  "At risk",
-  "Blocked",
-];
+export const projectViewLabels = {
+  overview: "概览",
+  tasks: "任务",
+  board: "看板",
+  iterations: "迭代",
+  milestones: "里程碑",
+  risks: "风险与问题",
+  discussion: "讨论",
+};

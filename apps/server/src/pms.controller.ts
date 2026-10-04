@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  ForbiddenException,
   Get,
   Headers,
   Param,
@@ -11,6 +12,7 @@ import {
   UnauthorizedException,
 } from "@nestjs/common";
 import { map, type Observable } from "rxjs";
+import { ConfigService } from "@nestjs/config";
 import type {
   Defect,
   DeliveryMetrics,
@@ -36,15 +38,15 @@ import {
   type SearchResult,
   type WorkItemComment,
   type WorkspaceMember,
-} from "./pms.service";
+} from "./pms.service.js";
 import {
   DatabaseService,
   type AiAuditRecord,
   type AgentRun,
   type AutomationRule,
-} from "./database.service";
-import { RealtimeService, type PmsEvent } from "./realtime.service";
-import { AuthService } from "./auth.service";
+} from "./database.service.js";
+import { RealtimeService, type PmsEvent } from "./realtime.service.js";
+import { AuthService } from "./auth.service.js";
 
 type ApiResponse<Data> = {
   data: Data;
@@ -145,6 +147,7 @@ export class PmsController {
     private readonly databaseService: DatabaseService,
     private readonly realtimeService: RealtimeService,
     private readonly authService: AuthService,
+    private readonly configService: ConfigService,
   ) {}
 
   @Sse("events")
@@ -155,9 +158,13 @@ export class PmsController {
   @Get("projects")
   listProjects(
     @Query("workspaceId") workspaceId: string,
+    @Headers("x-member-id") memberId: string,
+    @Headers("authorization") authorization: string,
   ): Promise<ApiResponse<Project[]>> {
+    const actorId = this.resolveMemberId(authorization, memberId);
     return this.databaseService
-      .listProjects(workspaceId)
+      .assertMemberCanRead(workspaceId, actorId)
+      .then(() => this.databaseService.listProjects(workspaceId))
       .then((data) => this.response(data));
   }
 
@@ -178,7 +185,12 @@ export class PmsController {
   ): Promise<ApiResponse<Project>> {
     const actorId = this.resolveMemberId(authorization, memberId);
     await this.databaseService.assertMemberCanWrite(body.workspaceId, actorId);
-    return this.response(await this.databaseService.createProject(body));
+    return this.response(
+      await this.databaseService.createProject({
+        ...body,
+        ownerId: actorId,
+      }),
+    );
   }
 
   @Get("workspaces/:workspaceId/members")
@@ -194,9 +206,12 @@ export class PmsController {
   listWorkItems(
     @Query("workspaceId") workspaceId: string,
     @Query("projectId") projectId: string,
+    @Headers("x-member-id") memberId: string,
+    @Headers("authorization") authorization: string,
   ): Promise<ApiResponse<WorkItem[]>> {
     return this.databaseService
-      .listWorkItems(workspaceId, projectId)
+      .assertMemberCanRead(workspaceId, this.resolveMemberId(authorization, memberId))
+      .then(() => this.databaseService.listWorkItems(workspaceId, projectId))
       .then((data) => this.response(data));
   }
 
@@ -226,7 +241,7 @@ export class PmsController {
     @Headers("authorization") authorization: string,
   ): Promise<ApiResponse<Iteration>> {
     const actorId = this.resolveMemberId(authorization, memberId);
-    await this.databaseService.assertMemberCanWrite("workspace-demo", actorId);
+    await this.databaseService.assertProjectCanWrite(projectId, actorId);
     return this.response(
       await this.databaseService.createIteration({ projectId, ...body }),
     );
@@ -240,7 +255,7 @@ export class PmsController {
     @Headers("authorization") authorization: string,
   ): Promise<ApiResponse<Milestone>> {
     const actorId = this.resolveMemberId(authorization, memberId);
-    await this.databaseService.assertMemberCanWrite("workspace-demo", actorId);
+    await this.databaseService.assertProjectCanWrite(projectId, actorId);
     return this.response(
       await this.databaseService.createMilestone({ projectId, ...body }),
     );
@@ -254,7 +269,7 @@ export class PmsController {
     @Headers("authorization") authorization: string,
   ): Promise<ApiResponse<Release>> {
     const actorId = this.resolveMemberId(authorization, memberId);
-    await this.databaseService.assertMemberCanWrite("workspace-demo", actorId);
+    await this.databaseService.assertProjectCanWrite(projectId, actorId);
     return this.response(
       await this.databaseService.createRelease({ projectId, ...body }),
     );
@@ -305,7 +320,15 @@ export class PmsController {
   async recordIntegrationEvent(
     @Param("provider") provider: IntegrationProvider,
     @Body() body: IntegrationEventBody,
+    @Headers("x-integration-secret") secret: string,
   ): Promise<ApiResponse<IntegrationEvent>> {
+    const expectedSecret = this.configService.get<string>(
+      "INTEGRATION_WEBHOOK_SECRET",
+      "local-webhook-secret",
+    );
+    if ((secret || "") !== expectedSecret) {
+      throw new ForbiddenException("集成 Webhook 密钥无效");
+    }
     return this.response(
       await this.databaseService.recordIntegrationEvent(
         provider,
@@ -442,7 +465,13 @@ export class PmsController {
   ): Promise<ApiResponse<WorkItem>> {
     const actorId = this.resolveMemberId(authorization, memberId);
     await this.databaseService.assertMemberCanWrite(body.workspaceId, actorId);
-    return this.response(await this.databaseService.createWorkItem(body));
+    return this.response(
+      await this.databaseService.createWorkItem({
+        ...body,
+        description: body.description || "",
+        reporterId: actorId,
+      }),
+    );
   }
 
   @Patch("work-items/:workItemId")

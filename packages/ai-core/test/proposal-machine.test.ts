@@ -6,7 +6,7 @@ import {
   createProposalExecutionKey,
   selectProposalChanges,
   transitionProposal,
-} from "../src";
+} from "../src/proposal-machine.ts";
 
 const proposal: Proposal = {
   id: "proposal-1",

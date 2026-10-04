@@ -9,17 +9,17 @@ export type {
   MilestoneStatus,
   Release,
   ReleaseStatus,
-} from "./delivery";
-export type { IntegrationEvent, IntegrationProvider } from "./integration";
-export type { PortfolioSummary, TeamCapacity } from "./portfolio";
-export type { WorkspaceGovernancePolicy } from "./governance";
+} from "./delivery.js";
+export type { IntegrationEvent, IntegrationProvider } from "./integration.js";
+export type { PortfolioSummary, TeamCapacity } from "./portfolio.js";
+export type { WorkspaceGovernancePolicy } from "./governance.js";
 export type {
   Project,
   ProjectMember,
   ProjectMemberRole,
   ProjectStatus,
   ProjectVisibility,
-} from "./project";
+} from "./project.js";
 export type {
   Proposal,
   ProposalChange,
@@ -27,7 +27,7 @@ export type {
   ProposalRisk,
   ProposalStatus,
   ProposalValue,
-} from "./proposal";
+} from "./proposal.js";
 export type {
   WorkItem,
   WorkItemDependency,
@@ -35,4 +35,4 @@ export type {
   WorkItemPriority,
   WorkItemStatus,
   WorkItemType,
-} from "./work-item";
+} from "./work-item.js";

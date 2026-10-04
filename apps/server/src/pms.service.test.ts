@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { PmsService } from "./pms.service";
+import { PmsService } from "./pms.service.js";
 
 describe("PmsService", () => {
   it("lists only projects in the requested workspace", () => {

@@ -6,9 +6,9 @@ import {
   UnauthorizedException,
 } from "@nestjs/common";
 
-import { AuthService } from "./auth.service";
-import { DatabaseService } from "./database.service";
-import { ProposalService } from "./proposal.service";
+import { AuthService } from "./auth.service.js";
+import { DatabaseService } from "./database.service.js";
+import { ProposalService } from "./proposal.service.js";
 
 type McpParams = {
   workspaceId: string;

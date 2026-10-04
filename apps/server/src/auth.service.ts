@@ -1,4 +1,4 @@
-import { randomBytes } from "node:crypto";
+import { createHmac, timingSafeEqual } from "node:crypto";
 import { Injectable, UnauthorizedException } from "@nestjs/common";
 
 export type LoginResult = {
@@ -9,15 +9,18 @@ export type LoginResult = {
 
 @Injectable()
 export class AuthService {
-  private readonly sessions = new Map<string, string>();
+  private readonly secret = process.env.PMS_AUTH_SECRET || "pms-local-auth-secret";
+  private readonly tokenLifetimeSeconds = 60 * 60 * 24 * 7;
 
   login(login: string, password: string): LoginResult {
     if (login !== "demo" || password !== "demo") {
       throw new UnauthorizedException("账号或密码错误");
     }
 
-    const accessToken = randomBytes(32).toString("base64url");
-    this.sessions.set(accessToken, "member-demo");
+    const expiresAt = Math.floor(Date.now() / 1000) + this.tokenLifetimeSeconds;
+    const payload = `member-demo.${expiresAt}`;
+    const signature = this.sign(payload);
+    const accessToken = `${payload}.${signature}`;
     return {
       accessToken,
       memberId: "member-demo",
@@ -29,10 +32,27 @@ export class AuthService {
     const token = authorization.startsWith("Bearer ")
       ? authorization.slice(7)
       : "";
-    const memberId = this.sessions.get(token);
-    if (!memberId) {
+    const parts = token.split(".");
+    if (parts.length !== 3) {
+      throw new UnauthorizedException("登录已失效");
+    }
+    const [memberId, expiresAt, signature] = parts;
+    const payload = `${memberId}.${expiresAt}`;
+    const expectedSignature = this.sign(payload);
+    if (signature.length !== expectedSignature.length) {
+      throw new UnauthorizedException("登录已失效");
+    }
+    const signatureMatches = timingSafeEqual(
+      Buffer.from(signature),
+      Buffer.from(expectedSignature),
+    );
+    if (!signatureMatches || Number.parseInt(expiresAt, 10) <= Math.floor(Date.now() / 1000)) {
       throw new UnauthorizedException("登录已失效");
     }
     return memberId;
+  }
+
+  private sign(payload: string): string {
+    return createHmac("sha256", this.secret).update(payload).digest("base64url");
   }
 }

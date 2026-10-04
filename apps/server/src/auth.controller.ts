@@ -1,6 +1,6 @@
 import { Body, Controller, Post } from "@nestjs/common";
 
-import { AuthService, type LoginResult } from "./auth.service";
+import { AuthService, type LoginResult } from "./auth.service.js";
 
 type LoginBody = {
   login: string;

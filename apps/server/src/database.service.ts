@@ -33,8 +33,8 @@ import type {
   SearchResult,
   WorkItemComment,
   WorkspaceMember,
-} from "./pms.service";
-import { RealtimeService } from "./realtime.service";
+} from "./pms.service.js";
+import { RealtimeService } from "./realtime.service.js";
 
 type CreateProjectInput = {
   workspaceId: string;
@@ -446,6 +446,21 @@ export class DatabaseService implements OnModuleInit, OnModuleDestroy {
     if (!result.rows[0]) {
       throw new ForbiddenException("成员无权访问此工作区");
     }
+  }
+
+  async assertProjectCanWrite(
+    projectId: string,
+    memberId: string,
+  ): Promise<void> {
+    const result = await this.pool.query<{ workspace_id: string }>(
+      "SELECT workspace_id FROM pms_projects WHERE id = $1",
+      [projectId],
+    );
+    const project = result.rows[0];
+    if (!project) {
+      throw new NotFoundException("项目不存在");
+    }
+    await this.assertMemberCanWrite(project.workspace_id, memberId);
   }
 
   async assertWorkItemCanWrite(
@@ -1278,6 +1293,9 @@ export class DatabaseService implements OnModuleInit, OnModuleDestroy {
        RETURNING *`,
       [id, input.status, input.priority, input.assigneeId, input.dueDate, new Date().toISOString()],
     );
+    if (!result.rows[0]) {
+      throw new NotFoundException("工作项不存在");
+    }
     this.realtimeService.publish("WORK_ITEM_CHANGED", id);
     return this.toWorkItem(result.rows[0]);
   }

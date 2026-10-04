@@ -1,7 +1,7 @@
 import { Injectable } from "@nestjs/common";
 import { Cron } from "@nestjs/schedule";
 
-import { DatabaseService } from "./database.service";
+import { DatabaseService } from "./database.service.js";
 
 @Injectable()
 export class GovernanceWorker {

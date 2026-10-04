@@ -4,4 +4,4 @@ export {
   hasHighRiskChange,
   selectProposalChanges,
   transitionProposal,
-} from "./proposal-machine";
+} from "./proposal-machine.js";

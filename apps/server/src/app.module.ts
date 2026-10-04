@@ -2,17 +2,17 @@ import { Module } from "@nestjs/common";
 import { ConfigModule } from "@nestjs/config";
 import { ScheduleModule } from "@nestjs/schedule";
 
-import { HealthController } from "./health.controller";
-import { PmsController } from "./pms.controller";
-import { DatabaseService } from "./database.service";
-import { RealtimeService } from "./realtime.service";
-import { AuthController } from "./auth.controller";
-import { AuthService } from "./auth.service";
-import { ProposalController } from "./proposal.controller";
-import { ProposalService } from "./proposal.service";
-import { AiGatewayService } from "./ai-gateway.service";
-import { McpController } from "./mcp.controller";
-import { GovernanceWorker } from "./governance.worker";
+import { HealthController } from "./health.controller.js";
+import { PmsController } from "./pms.controller.js";
+import { DatabaseService } from "./database.service.js";
+import { RealtimeService } from "./realtime.service.js";
+import { AuthController } from "./auth.controller.js";
+import { AuthService } from "./auth.service.js";
+import { ProposalController } from "./proposal.controller.js";
+import { ProposalService } from "./proposal.service.js";
+import { AiGatewayService } from "./ai-gateway.service.js";
+import { McpController } from "./mcp.controller.js";
+import { GovernanceWorker } from "./governance.worker.js";
 
 @Module({
   imports: [

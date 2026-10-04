@@ -1,4 +1,4 @@
-import type { RealtimeEvent } from "./contracts";
+import type { RealtimeEvent } from "./contracts.js";
 
 export function subscribeRealtime(
   baseUrl: string,

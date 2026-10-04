@@ -2,28 +2,26 @@
   "version": "0.2.0",
   "configurations": [
     {
-      "name": "PMS：全部开发服务",
-      "type": "node-terminal",
-      "request": "launch",
-      "command": "pnpm dev:all",
-      "cwd": "${workspaceFolder}"
-    },
-    {
-      "name": "PMS：Tauri 桌面端",
+      "name": "PMS：Desktop",
       "type": "node-terminal",
       "request": "launch",
       "command": "pnpm tauri dev",
       "cwd": "${workspaceFolder}"
     },
     {
-      "name": "PMS：Web 端",
+      "name": "PMS：Web",
       "type": "node-terminal",
       "request": "launch",
       "command": "pnpm --filter @pms/web dev",
-      "cwd": "${workspaceFolder}"
+      "cwd": "${workspaceFolder}",
+      "serverReadyAction": {
+        "pattern": "Local:\\s+(https?://\\S+)",
+        "uriFormat": "%s",
+        "action": "debugWithChrome"
+      }
     },
     {
-      "name": "PMS：NestJS Server",
+      "name": "PMS：Server",
       "type": "node-terminal",
       "request": "launch",
       "command": "pnpm server:dev",
@@ -32,9 +30,11 @@
   ],
   "compounds": [
     {
-      "name": "PMS：完整本地调试",
+      "name": "PMS：All",
       "configurations": [
-        "PMS：Tauri 桌面端"
+        "PMS：Desktop",
+        "PMS：Web",
+        "PMS：Server"
       ],
       "stopAll": true
     }

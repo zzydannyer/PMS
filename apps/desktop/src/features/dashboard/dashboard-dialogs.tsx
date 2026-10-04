@@ -85,6 +85,7 @@ export function SearchDialog({
 type CreateWorkDialogProps = {
   open: boolean;
   title: string;
+  loading: boolean;
   onTitleChange: (title: string) => void;
   onClose: () => void;
   onSubmit: FormEventHandler<HTMLFormElement>;
@@ -93,6 +94,7 @@ type CreateWorkDialogProps = {
 export function CreateWorkDialog({
   open,
   title,
+  loading,
   onTitleChange,
   onClose,
   onSubmit,
@@ -109,14 +111,14 @@ export function CreateWorkDialog({
       >
         <div className="flex items-start justify-between">
           <div>
-            <p className="text-lg font-semibold text-white">新建工作流</p>
+            <p className="text-lg font-semibold text-white">新建任务</p>
             <p className="mt-1 text-sm text-slate-500">
-              将一项工作承诺加入交付看板。
+              把下一项工作加入当前项目。
             </p>
           </div>
           <button
             type="button"
-            aria-label="关闭新建工作流"
+            aria-label="关闭新建任务"
             onClick={onClose}
             className="rounded-md p-1 text-slate-500 hover:bg-slate-800 hover:text-white"
           >
@@ -127,23 +129,23 @@ export function CreateWorkDialog({
           className="mt-6 block text-xs font-medium text-slate-400"
           htmlFor="workstream-title"
         >
-          工作流名称
+          任务名称
         </label>
         <input
           id="workstream-title"
           autoFocus
           value={title}
           onChange={(event) => onTitleChange(event.currentTarget.value)}
-          placeholder="例如：合作伙伴上线清单"
+          placeholder="例如：完成登录页验收"
           className="theme-field mt-2 h-11 w-full rounded-lg border border-slate-700 bg-slate-950 px-3 text-sm text-white outline-none placeholder:text-slate-600 focus:border-cyan-400"
         />
         <div className="mt-6 flex justify-end gap-2">
           <Button type="button" variant="ghost" onClick={onClose}>
             取消
           </Button>
-          <Button type="submit" variant="primary">
+          <Button type="submit" variant="primary" disabled={loading}>
             <Plus className="size-4" />
-            添加工作流
+            {loading ? "创建中…" : "创建任务"}
           </Button>
         </div>
       </form>
@@ -306,7 +308,7 @@ export function LoginScreen({
   onSubmit,
 }: LoginScreenProps) {
   return (
-    <div className="flex h-svh min-h-[700px] min-w-[1120px] items-center justify-center bg-[#07111f] text-slate-100">
+    <div className="flex h-svh min-h-175 min-w-280 items-center justify-center bg-[#07111f] text-slate-100">
       <form
         onSubmit={onSubmit}
         className="w-full max-w-sm rounded-2xl border border-slate-700 bg-[#0b192b] p-7 shadow-2xl"

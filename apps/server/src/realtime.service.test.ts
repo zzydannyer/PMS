@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { RealtimeService } from "./realtime.service";
+import { RealtimeService } from "./realtime.service.js";
 
 describe("RealtimeService", () => {
   it("publishes events to active subscribers", () => {

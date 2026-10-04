@@ -1,18 +1,19 @@
 {
   "name": "pms",
   "private": true,
-  "version": "0.1.0",
+  "version": "0.1.1",
   "packageManager": "pnpm@10.33.0",
   "scripts": {
-    "dev": "pnpm --parallel --filter @pms/desktop --filter @pms/server dev",
-    "dev:all": "pnpm --parallel --filter @pms/desktop --filter @pms/server --filter @pms/web dev",
+    "dev": "concurrently --kill-others-on-fail --names desktop,server \"pnpm --filter @pms/desktop dev\" \"pnpm --filter @pms/server dev\"",
+    "dev:all": "concurrently --kill-others-on-fail --names desktop,server,web \"pnpm --filter @pms/desktop dev\" \"pnpm --filter @pms/server dev\" \"pnpm --filter @pms/web dev\"",
     "build": "pnpm --filter @pms/domain build && pnpm --filter @pms/api-client build && pnpm --filter @pms/ai-core build && pnpm --filter @pms/server build && pnpm --filter @pms/desktop build && pnpm --filter @pms/web build",
     "server:dev": "pnpm --filter @pms/server dev",
     "test": "vitest run",
     "tauri": "pnpm --filter @pms/desktop tauri"
   },
   "devDependencies": {
-    "typescript": "^5.7.2",
-    "vitest": "^3.2.4"
+    "concurrently": "^10.0.5",
+    "typescript": "^6.0.3",
+    "vitest": "^5.0.3"
   }
 }

@@ -26,5 +26,5 @@ export type {
   PageResult,
   PmsApi,
   RealtimeEvent,
-} from "./contracts";
-export { subscribeRealtime } from "./realtime";
+} from "./contracts.js";
+export { subscribeRealtime } from "./realtime.js";

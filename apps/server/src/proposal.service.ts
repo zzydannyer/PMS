@@ -6,7 +6,7 @@ import {
 } from "@pms/domain";
 import { transitionProposal as moveProposal } from "@pms/ai-core";
 
-import { DatabaseService } from "./database.service";
+import { DatabaseService } from "./database.service.js";
 
 type CreateProposalInput = {
   workspaceId: string;

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { AuthService } from "./auth.service";
+import { AuthService } from "./auth.service.js";
 
 describe("AuthService", () => {
   it("creates a session for the demo account", () => {

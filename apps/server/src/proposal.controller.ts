@@ -10,10 +10,10 @@ import {
 } from "@nestjs/common";
 import type { AiUsageSummary, Proposal, WorkItem } from "@pms/domain";
 
-import { AuthService } from "./auth.service";
-import { ProposalService } from "./proposal.service";
-import { AiGatewayService } from "./ai-gateway.service";
-import { DatabaseService } from "./database.service";
+import { AuthService } from "./auth.service.js";
+import { ProposalService } from "./proposal.service.js";
+import { AiGatewayService } from "./ai-gateway.service.js";
+import { DatabaseService } from "./database.service.js";
 
 type CreateProposalBody = {
   workspaceId: string;

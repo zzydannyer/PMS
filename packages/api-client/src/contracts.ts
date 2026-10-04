@@ -28,24 +28,69 @@ export type PageResult<Item> = {
 
 export type ListProjectsRequest = {
   workspaceId: string;
-  cursor: string;
-  limit: number;
 };
 
-export type ListProjectsResponse = ApiResponse<PageResult<Project>>;
+export type ListProjectsResponse = ApiResponse<Project[]>;
+
+export type CreateProjectRequest = {
+  workspaceId: string;
+  name: string;
+  description: string;
+  ownerId: string;
+};
+
+export type CreateProjectResponse = ApiResponse<Project>;
 
 export type ListWorkItemsRequest = {
   workspaceId: string;
   projectId: string;
-  cursor: string;
-  limit: number;
 };
 
-export type ListWorkItemsResponse = ApiResponse<PageResult<WorkItem>>;
+export type ListWorkItemsResponse = ApiResponse<WorkItem[]>;
+
+export type CreateWorkItemRequest = {
+  workspaceId: string;
+  projectId: string;
+  title: string;
+  description: string;
+  type: WorkItem["type"];
+  priority: WorkItem["priority"];
+  reporterId: string;
+};
+
+export type CreateWorkItemResponse = ApiResponse<WorkItem>;
+
+export type UpdateWorkItemRequest = {
+  status: WorkItem["status"];
+  priority: WorkItem["priority"];
+  assigneeId: string;
+  dueDate: string;
+};
+
+export type UpdateWorkItemResponse = ApiResponse<WorkItem>;
 
 export type ListDeliveryRequest = {
   projectId: string;
 };
+
+export type CreateIterationRequest = {
+  projectId: string;
+  name: string;
+  goal: string;
+  startDate: string;
+  endDate: string;
+};
+
+export type CreateIterationResponse = ApiResponse<Iteration>;
+
+export type CreateMilestoneRequest = {
+  projectId: string;
+  name: string;
+  description: string;
+  dueDate: string;
+};
+
+export type CreateMilestoneResponse = ApiResponse<Milestone>;
 
 export type ListDeliveryResponse = ApiResponse<{
   iterations: Iteration[];
@@ -129,7 +174,25 @@ export type RealtimeEvent = {
 
 export type PmsApi = {
   listProjects: (request: ListProjectsRequest) => Promise<ListProjectsResponse>;
+  createProject: (
+    request: CreateProjectRequest,
+  ) => Promise<CreateProjectResponse>;
   listWorkItems: (request: ListWorkItemsRequest) => Promise<ListWorkItemsResponse>;
+  createWorkItem: (
+    request: CreateWorkItemRequest,
+  ) => Promise<CreateWorkItemResponse>;
+  updateWorkItem: (
+    workItemId: string,
+    request: UpdateWorkItemRequest,
+  ) => Promise<UpdateWorkItemResponse>;
+  createIteration: (
+    projectId: string,
+    request: CreateIterationRequest,
+  ) => Promise<CreateIterationResponse>;
+  createMilestone: (
+    projectId: string,
+    request: CreateMilestoneRequest,
+  ) => Promise<CreateMilestoneResponse>;
   askAgent: (request: AskAgentRequest) => Promise<AskAgentResponse>;
   confirmProposal: (
     request: ConfirmProposalRequest,
